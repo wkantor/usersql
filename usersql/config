@@ -1,0 +1,4 @@
+MYDB='ltkybrgd'
+export PGUSER='ltkybrgd'
+export PGPASSWORD='q_a0TTW9n3-JMatz9L3JO3lELHU9WBIE'
+export PGHOST='kandula.db.elephantsql.com'

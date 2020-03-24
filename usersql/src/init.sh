@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#check if config exists
+if [ ! -f /opt/usersql/etc/config ]; then
+    echo "Config missing!"
+    exit 1
+fi
+
+
+
+
+source /opt/usersql/etc/config
+
+#checks if the database exists. if not, creates it.
+psql -tc "SELECT 1 FROM pg_database WHERE datname = '$MYDB'" | grep -q 1 || psql -c "CREATE DATABASE $MYDB" >&-
+
+#checks for the tables, if they don't exist, creates them
+psql -c "CREATE TABLE IF NOT EXISTS users (id serial PRIMARY KEY, first_name VARCHAR (50) NOT NULL, last_name VARCHAR (50) NOT NULL, email_adress VARCHAR (250) NOT NULL, active bool NOT NULL);
+CREATE TABLE IF NOT EXISTS user_preferences (id serial PRIMARY KEY, user_id integer NOT NULL, key TEXT NOT NULL, value integer NOT NULL); 
+CREATE TABLE IF NOT EXISTS tasks (id serial PRIMARY KEY, user_id integer NOT NULL, task text NOT NULL)" >&-
+
+#checks for data_users
+if [ ! -f "/opt/usersql/data_users.csv" ]; then
+       echo "Data_users.csv is missing from set directory!"
+#fills in the data
+else
+       psql -c "\copy users (first_name, last_name, email_adress, active) FROM '/opt/usersql/data_users.csv' DELIMITER ',' CSV HEADER;" >&-
+fi
+
+#checks for data_tasks
+if [ ! -f "/opt/usersql/data_tasks.csv" ]; then
+       echo "Data_tasks.csv is missing from set directory!"
+#fills in the data
+else
+       psql -c "\copy user_preferences (user_id, key, value) FROM '/opt/usersql/data_user_preferences.csv' DELIMITER ',' CSV HEADER;" >&-
+fi
+
+#checks for data_user_preferences
+if [ ! -f "/opt/usersql/data_user_preferences.csv" ]; then
+       echo "Data_user_preferences.csv is missing from set directory!"
+#fills in the data
+else
+       psql -c "\copy tasks (user_id, task) FROM '/opt/usersql/data_tasks.csv' DELIMITER ',' CSV HEADER;" >&-
+fi
+
