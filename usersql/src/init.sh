@@ -43,3 +43,39 @@ else
        psql -c "\copy tasks (user_id, task) FROM '/opt/usersql/data_tasks.csv' DELIMITER ',' CSV HEADER;" >&-
 fi
 
+
+
+options=$(getopt -o p --long addtextexternalidfromfile: -- "$@")
+[ $? -eq 0 ] || {
+    echo "Incorrect options provided"
+    exit 1
+}
+
+eval set -- "$options"
+while true; do
+    case "$1" in
+    --addtextexternalidfromfile)
+        shift
+        DATA=$1
+        ;;
+    --)
+        shift
+        break
+        ;;
+    esac
+    shift
+done
+
+if [ -z $DATA ]; then
+  exit 0
+else
+  WTD= cat $DATA | sed 's/://g' tst| mlr --x2c cut -f uid  | grep -v 'uid' > /tmp/wtd
+  psql -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS external_id text" >&-
+  psql -c "CREATE TABLE tmp (id serial PRIMARY KEY, external text);" >&-
+  psql -c "\copy tmp (external) FROM /tmp/wtd DELIMITER ',' " >&-
+  psql -c "UPDATE users SET external_id = tmp.external FROM tmp WHERE users.id = tmp.id" >&-
+  psql -c "DROP TABLE tmp" >&-
+fi
+exit 0
+
+
